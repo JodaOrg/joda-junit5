@@ -15,17 +15,14 @@
  */
 package org.joda.junit5;
 
-import static java.util.Comparator.comparing;
-
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.function.Executable;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Base interface for JUnit 5 where tests are automatically identified.
@@ -50,25 +47,13 @@ public interface AutoTest {
     /**
      * Runs the tests in the current class.
      * 
-     * @param executable the test to execute
-     * @throws Throwable if a problem occurs with the test
+     * @return the tests in the implementing class
      */
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("findTests")
-    public default void runTests(Executable executable) throws Throwable {
-        executable.execute();
-    }
-
-    /**
-     * Finds the tests in the current class.
-     * 
-     * @return the stream of tests
-     */
-    public default Stream<Executable> findTests() {
+    @TestFactory
+    public default Stream<DynamicTest> runTests() {
         return Arrays.stream(getClass().getDeclaredMethods())
                 .filter(method -> JUnit5Utils.isTestMethod(method))
-                .sorted(comparing(Method::getName))
-                .map(method -> JUnit5Utils.wrapAsExecutable(this, method));
+                .map(method -> DynamicTest.dynamicTest(method.getName(), () -> method.invoke(this)));
     }
 
 }
